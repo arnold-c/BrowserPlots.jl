@@ -194,6 +194,12 @@ const HTML_VIEWER_TEMPLATE = """
 </html>
 """
 
+function enable_makie_inline!()
+    extension_module = Base.get_extension(@__MODULE__, :BrowserPlotsMakieExt)
+    isnothing(extension_module) || extension_module.enable_inline!()
+    return nothing
+end
+
 function open_browser(url::String)
     try
         if Sys.isapple()
@@ -281,6 +287,7 @@ function browse(; port::Int = 8008, launch::Bool = true)
         Base.pushdisplay(VIEWER)
         VIEWER.active = true
     end
+    enable_makie_inline!()
 
     url = "http://127.0.0.1:$port"
     println("BrowserGraphics active at: $url")
