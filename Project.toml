@@ -1,0 +1,12 @@
+name = "BrowserPlots"
+uuid = "dd95b149-77a5-47fc-b8dd-394eaf8426b4"
+version = "0.1.0"
+authors = ["Callum Arnold <24391445+arnold-c@users.noreply.github.com>"]
+
+[deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+
+[compat]
+Dates = "1.11.0"
+HTTP = "2.6.5"
