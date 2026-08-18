@@ -230,10 +230,16 @@ const HTML_VIEWER_TEMPLATE = """
     }
 
     async function clearHistory() {
-      await fetch('/api/clear', { method: 'POST' });
+      const clearRequest = fetch('/api/clear', { method: 'POST' });
       plotList = [];
       renderGallery();
       showEmptyState();
+
+      try {
+        await clearRequest;
+      } catch {
+        // The Julia session may have closed; the local gallery is still cleared.
+      }
     }
 
     window.addEventListener('keydown', (e) => {
