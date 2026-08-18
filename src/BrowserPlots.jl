@@ -26,7 +26,7 @@ const HTML_VIEWER_TEMPLATE = """
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>BrowserGraphics Viewer</title>
+  <title>Julia Plots</title>
   <style>
     :root {
       --bg-dark: #121212;
