@@ -2,6 +2,8 @@
 
 BrowserPlots.jl sends plots from a Julia session to a lightweight gallery in your web browser. It integrates with Julia's display system, keeps a session history, and works with both [Plots.jl](https://docs.juliaplots.org/) and [Makie](https://docs.makie.org/).
 
+![BrowserPlots gallery interface](assets/BrowserPlots-preview.png)
+
 ## Installation
 
 Install BrowserPlots directly from GitHub:
