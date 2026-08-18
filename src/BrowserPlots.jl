@@ -46,6 +46,8 @@ const HTML_VIEWER_TEMPLATE = """
     button { background: var(--bg-card); color: var(--text-main); border: 1px solid var(--border); padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; transition: all 0.2s; }
     button:hover { background: #333; border-color: var(--accent); }
     button.active { background: var(--accent); border-color: var(--accent); color: white; }
+    button:disabled { cursor: default; opacity: 0.5; }
+    button:disabled:hover { background: var(--bg-card); border-color: var(--border); }
     #workspace { flex: 1; display: flex; overflow: hidden; }
     #sidebar { width: 280px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow-y: auto; }
     .sidebar-header { padding: 12px 16px; font-size: 0.8rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); border-bottom: 1px solid var(--border); }
@@ -70,6 +72,7 @@ const HTML_VIEWER_TEMPLATE = """
 <body>
   <header>
     <div class="logo-group">
+      <button id="btn-sidebar" class="active" aria-controls="sidebar" aria-expanded="true" aria-label="Hide session history" title="Hide session history" onclick="toggleSidebar()">← Hide History</button>
       <strong>BrowserGraphics</strong>
       <span id="plot-counter" class="counter">0 Plots</span>
     </div>
@@ -101,6 +104,7 @@ const HTML_VIEWER_TEMPLATE = """
     let plotList = [];
     let currentIndex = -1;
     let viewMode = 'focus';
+    let sidebarVisible = true;
 
     async function syncPlots() {
       const res = await fetch('/api/plots');
@@ -172,13 +176,31 @@ const HTML_VIEWER_TEMPLATE = """
 
     function navigate(direction) { selectPlot(currentIndex + direction); }
 
+    function updateSidebar() {
+      const available = viewMode === 'focus';
+      const expanded = available && sidebarVisible;
+      const button = document.getElementById('btn-sidebar');
+      document.getElementById('sidebar').style.display = expanded ? 'flex' : 'none';
+      button.disabled = !available;
+      button.classList.toggle('active', expanded);
+      button.setAttribute('aria-expanded', expanded.toString());
+      button.setAttribute('aria-label', expanded ? 'Hide session history' : 'Show session history');
+      button.title = expanded ? 'Hide session history' : 'Show session history';
+      button.innerText = expanded ? '← Hide History' : 'Show History →';
+    }
+
+    function toggleSidebar() {
+      sidebarVisible = !sidebarVisible;
+      updateSidebar();
+    }
+
     function setViewMode(mode) {
       viewMode = mode;
       document.getElementById('btn-focus').classList.toggle('active', mode === 'focus');
       document.getElementById('btn-grid').classList.toggle('active', mode === 'grid');
-      document.getElementById('sidebar').style.display = mode === 'focus' ? 'flex' : 'none';
       document.getElementById('focus-view').style.display = mode === 'focus' ? 'flex' : 'none';
       document.getElementById('grid-view').style.display = mode === 'grid' ? 'grid' : 'none';
+      updateSidebar();
     }
 
     function showEmptyState() {
