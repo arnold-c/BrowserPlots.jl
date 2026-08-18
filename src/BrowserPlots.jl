@@ -276,12 +276,14 @@ function open_browser(url::String)
 end
 
 """
-    browse(; port=8008, launch=true)
+    browse(; port=8008, launch=true, silent=false)
 
-Starts the BrowserGraphics HTTP server, hooks into Julia's display system,
-and optionally opens the browser gallery.
+Starts the BrowserGraphics HTTP server and hooks into Julia's display system.
+The browser gallery opens automatically unless `launch=false` or `silent=true`.
+Use `silent=true` to restart the server without opening a new browser tab, then
+reload an existing gallery tab.
 """
-function browse(; port::Int = 8008, launch::Bool = true)
+function browse(; port::Int = 8008, launch::Bool = true, silent::Bool = false)
     if VIEWER.server !== nothing
         close_server!()
     end
@@ -368,7 +370,7 @@ function browse(; port::Int = 8008, launch::Bool = true)
 
     url = "http://127.0.0.1:$port"
     println("BrowserGraphics active at: $url")
-    if launch
+    if launch && !silent
         open_browser(url)
     end
     return nothing
