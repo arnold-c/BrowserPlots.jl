@@ -16,9 +16,10 @@ mutable struct BrowserDisplay <: AbstractDisplay
     server::Union{HTTP.Server, Nothing}
     port::Int
     active::Bool
+    next_id::Int
 end
 
-const VIEWER = BrowserDisplay(PlotEntry[], nothing, 8008, false)
+const VIEWER = BrowserDisplay(PlotEntry[], nothing, 8008, false, 1)
 
 const HTML_VIEWER_TEMPLATE = """
 <!DOCTYPE html>
@@ -53,7 +54,9 @@ const HTML_VIEWER_TEMPLATE = """
     .thumb-card:hover { border-color: #555; }
     .thumb-card.selected { border-color: var(--accent); background: #2f3542; }
     .thumb-card img { width: 100%; height: 110px; object-fit: contain; background: white; border-radius: 4px; display: block; }
-    .thumb-meta { display: flex; justify-content: space-between; margin-top: 6px; font-size: 0.75rem; color: var(--text-muted); }
+    .thumb-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.75rem; color: var(--text-muted); }
+    .delete-btn { padding: 1px 7px; color: var(--text-muted); border-color: transparent; font-size: 1rem; line-height: 1.2; }
+    .delete-btn:hover { color: #f87171; border-color: #f87171; background: rgba(248, 113, 113, 0.1); }
     #focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; position: relative; }
     #focus-image { max-width: 100%; max-height: 80vh; object-fit: contain; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
     .nav-overlay { margin-top: 14px; display: flex; gap: 10px; align-items: center; }
@@ -102,13 +105,20 @@ const HTML_VIEWER_TEMPLATE = """
     async function syncPlots() {
       const res = await fetch('/api/plots');
       const data = await res.json();
-      if (data.length !== plotList.length) {
-        const hadZero = plotList.length === 0;
-        plotList = data;
-        renderGallery();
-        if (hadZero || currentIndex === plotList.length - 2) {
-          selectPlot(plotList.length - 1);
-        }
+      const changed = data.length !== plotList.length ||
+        data.some((plot, idx) => plot.id !== plotList[idx]?.id);
+      if (!changed) return;
+
+      const selectedId = plotList[currentIndex]?.id;
+      const wasAtEnd = currentIndex === plotList.length - 1;
+      plotList = data;
+      renderGallery();
+
+      if (plotList.length === 0) {
+        showEmptyState();
+      } else {
+        const selectedIndex = plotList.findIndex(plot => plot.id === selectedId);
+        selectPlot(wasAtEnd || selectedIndex < 0 ? plotList.length - 1 : selectedIndex);
       }
     }
 
@@ -126,8 +136,8 @@ const HTML_VIEWER_TEMPLATE = """
         card.innerHTML = `
           <img src="/plot/\${plot.id}" loading="lazy" />
           <div class="thumb-meta">
-            <span>#\${plot.id}</span>
-            <span>\${plot.time}</span>
+            <span>#\${plot.id} · \${plot.time}</span>
+            <button class="delete-btn" title="Delete plot" onclick="deletePlot(\${plot.id}, event)">×</button>
           </div>
         `;
         thumbContainer.appendChild(card);
@@ -138,8 +148,8 @@ const HTML_VIEWER_TEMPLATE = """
         gridCard.innerHTML = `
           <img src="/plot/\${plot.id}" loading="lazy" />
           <div class="thumb-meta">
-            <span>#\${plot.id}</span>
-            <span>\${plot.time}</span>
+            <span>#\${plot.id} · \${plot.time}</span>
+            <button class="delete-btn" title="Delete plot" onclick="deletePlot(\${plot.id}, event)">×</button>
           </div>
         `;
         gridContainer.appendChild(gridCard);
@@ -171,14 +181,37 @@ const HTML_VIEWER_TEMPLATE = """
       document.getElementById('grid-view').style.display = mode === 'grid' ? 'grid' : 'none';
     }
 
-    async function clearHistory() {
-      await fetch('/api/clear', { method: 'POST' });
-      plotList = [];
+    function showEmptyState() {
       currentIndex = -1;
-      renderGallery();
       document.getElementById('focus-image').style.display = 'none';
       document.getElementById('nav-overlay').style.display = 'none';
       document.getElementById('empty-focus').style.display = 'block';
+    }
+
+    async function deletePlot(id, event) {
+      event.stopPropagation();
+      const selectedId = plotList[currentIndex]?.id;
+      const deletedIndex = plotList.findIndex(plot => plot.id === id);
+      const res = await fetch('/api/plots/' + id, { method: 'DELETE' });
+      if (!res.ok) return;
+
+      plotList = plotList.filter(plot => plot.id !== id);
+      renderGallery();
+      if (plotList.length === 0) {
+        showEmptyState();
+        return;
+      }
+
+      const selectedIndex = plotList.findIndex(plot => plot.id === selectedId);
+      const nextIndex = selectedIndex >= 0 ? selectedIndex : Math.min(deletedIndex, plotList.length - 1);
+      selectPlot(nextIndex);
+    }
+
+    async function clearHistory() {
+      await fetch('/api/clear', { method: 'POST' });
+      plotList = [];
+      renderGallery();
+      showEmptyState();
     }
 
     window.addEventListener('keydown', (e) => {
@@ -264,6 +297,22 @@ function browse(; port::Int = 8008, launch::Bool = true)
 
     HTTP.register!(
         router,
+        "DELETE",
+        "/api/plots/{id}",
+        r -> begin
+            id = parse(Int, HTTP.getparams(r)["id"])
+            idx = findfirst(p -> p.id == id, VIEWER.history)
+            if isnothing(idx)
+                HTTP.Response(404, "Plot not found")
+            else
+                deleteat!(VIEWER.history, idx)
+                HTTP.Response(200, "OK")
+            end
+        end,
+    )
+
+    HTTP.register!(
+        router,
         "GET",
         "/plot/{id}",
         r -> begin
@@ -322,7 +371,8 @@ Base.displayable(::BrowserDisplay, ::MIME"image/png") = true
 function Base.display(d::BrowserDisplay, mime::MIME"image/png", x)
     io = IOBuffer()
     show(io, mime, x)
-    entry = PlotEntry(length(d.history) + 1, take!(io), Dates.format(now(), "HH:MM:SS"))
+    entry = PlotEntry(d.next_id, take!(io), Dates.format(now(), "HH:MM:SS"))
+    d.next_id += 1
     push!(d.history, entry)
     return nothing
 end
