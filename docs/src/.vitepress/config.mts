@@ -39,69 +39,69 @@ export default defineConfig({
 	head: [
 		['link', { rel: 'icon', href: 'REPLACE_ME_DOCUMENTER_VITEPRESS_FAVICON' }],
 		// ['script', { src: `${getBaseRepository(baseTemp.base)}versions.js` }],
-		['script', { src: '/versions.js' }}, // for custom domains, I guess if deploy_url is available.
-	['script', { src: `${baseTemp.base}siteinfo.js` }],
-			// REPLACE_ME_DOCUMENTER_VITEPRESS_NOINDEX
-		],
+		['script', { src: '/versions.js' }], // for custom domains, I guess if deploy_url is available.
+		['script', { src: `${baseTemp.base}siteinfo.js` }],
+		// REPLACE_ME_DOCUMENTER_VITEPRESS_NOINDEX
+	],
 
 	markdown: {
-	codeTransformers: [juliaReplTransformer()],
-	config(md) {
-		md.use(tabsMarkdownPlugin);
-		md.use(footnote);
-		mathjax.markdownConfig(md);
+		codeTransformers: [juliaReplTransformer()],
+		config(md) {
+			md.use(tabsMarkdownPlugin);
+			md.use(footnote);
+			mathjax.markdownConfig(md);
+		},
+		theme: {
+			light: "github-light",
+			dark: "github-dark"
+		},
 	},
-	theme: {
-		light: "github-light",
-		dark: "github-dark"
-	},
-},
 	vite: {
-	plugins: [
-		mathjax.vitePlugin,
-	],
-	define: {
-		__DEPLOY_ABSPATH__: JSON.stringify('REPLACE_ME_DOCUMENTER_VITEPRESS_DEPLOY_ABSPATH'),
-	},
-	resolve: {
-		alias: {
-			'@': path.resolve(__dirname, '../components')
-		}
-	},
-	optimizeDeps: {
-		exclude: [
-			'@nolebase/vitepress-plugin-enhanced-readabilities/client',
-			'vitepress',
-			'@nolebase/ui',
+		plugins: [
+			mathjax.vitePlugin,
 		],
+		define: {
+			__DEPLOY_ABSPATH__: JSON.stringify('REPLACE_ME_DOCUMENTER_VITEPRESS_DEPLOY_ABSPATH'),
+		},
+		resolve: {
+			alias: {
+				'@': path.resolve(__dirname, '../components')
+			}
+		},
+		optimizeDeps: {
+			exclude: [
+				'@nolebase/vitepress-plugin-enhanced-readabilities/client',
+				'vitepress',
+				'@nolebase/ui',
+			],
+		},
+		ssr: {
+			noExternal: [
+				// If there are other packages that need to be processed by Vite, you can add them here.
+				'@nolebase/vitepress-plugin-enhanced-readabilities',
+				'@nolebase/ui',
+			],
+		},
 	},
-	ssr: {
-		noExternal: [
-			// If there are other packages that need to be processed by Vite, you can add them here.
-			'@nolebase/vitepress-plugin-enhanced-readabilities',
-			'@nolebase/ui',
-		],
-	},
-},
 	themeConfig: {
-	outline: 'deep',
-	logo: 'REPLACE_ME_DOCUMENTER_VITEPRESS',
-	search: {
-		provider: 'local',
-		options: {
-			detailedView: true
+		outline: 'deep',
+		logo: 'REPLACE_ME_DOCUMENTER_VITEPRESS',
+		search: {
+			provider: 'local',
+			options: {
+				detailedView: true
+			}
+		},
+		nav,
+		sidebar: 'REPLACE_ME_DOCUMENTER_VITEPRESS',
+		sidebarDrawer: 'REPLACE_ME_DOCUMENTER_VITEPRESS_SIDEBAR_DRAWER',
+		editLink: 'REPLACE_ME_DOCUMENTER_VITEPRESS',
+		socialLinks: [
+			{ icon: 'github', link: 'REPLACE_ME_DOCUMENTER_VITEPRESS' }
+		],
+		footer: {
+			message: 'Made with <a href="https://luxdl.github.io/DocumenterVitepress.jl/dev/" target="_blank"><strong>DocumenterVitepress.jl</strong></a><br>',
+			copyright: `© Copyright ${new Date().getUTCFullYear()}.`
 		}
-	},
-	nav,
-	sidebar: 'REPLACE_ME_DOCUMENTER_VITEPRESS',
-	sidebarDrawer: 'REPLACE_ME_DOCUMENTER_VITEPRESS_SIDEBAR_DRAWER',
-	editLink: 'REPLACE_ME_DOCUMENTER_VITEPRESS',
-	socialLinks: [
-		{ icon: 'github', link: 'REPLACE_ME_DOCUMENTER_VITEPRESS' }
-	],
-	footer: {
-		message: 'Made with <a href="https://luxdl.github.io/DocumenterVitepress.jl/dev/" target="_blank"><strong>DocumenterVitepress.jl</strong></a><br>',
-		copyright: `© Copyright ${new Date().getUTCFullYear()}.`
 	}
-}
 })
