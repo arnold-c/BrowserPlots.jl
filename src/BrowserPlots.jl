@@ -262,7 +262,7 @@ function enable_makie_inline!()
 end
 
 function open_browser(url::String)
-    try
+    return try
         if Sys.isapple()
             run(`open $url`, wait = false)
         elseif Sys.islinux()
@@ -276,14 +276,14 @@ function open_browser(url::String)
 end
 
 """
-    browse(; port=8008, launch=true, silent=false)
+    browse(; port=8008, silent=false)
 
 Starts the BrowserGraphics HTTP server and hooks into Julia's display system.
-The browser gallery opens automatically unless `launch=false` or `silent=true`.
+The browser gallery opens automatically unless `silent=true`.
 Use `silent=true` to restart the server without opening a new browser tab, then
 reload an existing gallery tab.
 """
-function browse(; port::Int = 8008, launch::Bool = true, silent::Bool = false)
+function browse(; port::Int = 8008, silent::Bool = false)
     if VIEWER.server !== nothing
         close_server!()
     end
@@ -305,7 +305,7 @@ function browse(; port::Int = 8008, launch::Bool = true, silent::Bool = false)
         r -> begin
             meta = [
                 "{\"id\": $(p.id), \"time\": \"$(p.timestamp)\"}"
-                for p in VIEWER.history
+                    for p in VIEWER.history
             ]
             HTTP.Response(
                 200,
@@ -370,7 +370,7 @@ function browse(; port::Int = 8008, launch::Bool = true, silent::Bool = false)
 
     url = "http://127.0.0.1:$port"
     println("BrowserGraphics active at: $url")
-    if launch && !silent
+    if !silent
         open_browser(url)
     end
     return nothing
