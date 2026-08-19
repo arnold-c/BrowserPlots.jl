@@ -16,6 +16,8 @@ makedocs(;
 
 DocumenterVitepress.deploydocs(;
     repo = "github.com/arnold-c/BrowserPlots.jl",
+    target = joinpath(@__DIR__, "build"),
+    branch = "docs-page",
     devbranch = "main",
     push_preview = true,
 )
