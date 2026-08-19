@@ -16,9 +16,9 @@ Pkg.add(url = "https://github.com/arnold-c/BrowserPlots.jl")
 Install a plotting package separately if you do not already have one:
 
 ```julia
-Pkg.add("Plots")
-# or
 Pkg.add("CairoMakie")
+# or
+Pkg.add("Plots")
 ```
 
 ## Quick start
