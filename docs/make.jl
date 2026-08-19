@@ -10,6 +10,7 @@ makedocs(;
         repo = "github.com/arnold-c/BrowserPlots.jl",
         devbranch = "main",
         devurl = "dev",
+        deploy_url = "https://browserplots.callumarnold.com"
     ),
     pages = ["Home" => "index.md"],
 )
