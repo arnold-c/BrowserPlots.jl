@@ -84,7 +84,7 @@ Choose another port or prevent BrowserPlots from opening a tab:
 
 ```julia
 browse(port = 8080)
-browse(launch = false)
+browse(silent = true)
 ```
 
 Calling `browse()` while the server is running restarts it. Use `silent = true` to restart without opening another tab, then reload an existing gallery tab:

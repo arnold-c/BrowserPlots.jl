@@ -16,9 +16,9 @@ Pkg.add(url = "https://github.com/arnold-c/BrowserPlots.jl")
 Install a plotting package separately if you do not already have one:
 
 ```julia
-Pkg.add("Plots")
-# or
 Pkg.add("CairoMakie")
+# or
+Pkg.add("Plots")
 ```
 
 ## Quick start
@@ -73,7 +73,7 @@ Choose another port or prevent BrowserPlots from opening a tab:
 
 ```julia
 browse(port = 8080)
-browse(launch = false)
+browse(silent = true)
 ```
 
 Calling `browse()` while the server is running restarts it. Use `silent = true` to restart without opening another tab, then reload an existing gallery tab:
@@ -98,7 +98,7 @@ close_server!()   # stop the server and unregister the display
 ### `browse`
 
 ```julia
-browse(; port = 8008, launch = true, silent = false)
+browse(; port = 8008, silent = false)
 ```
 
 Start or restart the browser gallery server and register BrowserPlots with Julia's display stack.
