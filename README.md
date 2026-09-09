@@ -63,6 +63,7 @@ The gallery updates as plots are generated. It provides:
 - a focused split view with session-history thumbnails;
 - a grid view for comparing plots;
 - previous and next navigation, including the arrow keys;
+- zoom controls (or the mouse wheel) and drag-to-pan in the focused plot;
 - controls to delete individual plots or clear the full history.
 
 The server listens only on `127.0.0.1`, so the gallery is available to the local machine at `http://127.0.0.1:8008` by default.

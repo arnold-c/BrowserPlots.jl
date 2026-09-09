@@ -59,8 +59,14 @@ const HTML_VIEWER_TEMPLATE = """
     .thumb-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.75rem; color: var(--text-muted); }
     .delete-btn { padding: 1px 7px; color: var(--text-muted); border-color: transparent; font-size: 1rem; line-height: 1.2; }
     .delete-btn:hover { color: #f87171; border-color: #f87171; background: rgba(248, 113, 113, 0.1); }
-    #focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; position: relative; }
-    #focus-image { max-width: 100%; max-height: 80vh; object-fit: contain; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    #focus-view { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; min-width: 0; padding: 24px; position: relative; }
+    #image-viewport { flex: 1; min-height: 0; width: 100%; display: flex; align-items: center; justify-content: center; overflow: hidden; position: relative; border-radius: 8px; touch-action: none; }
+    #image-viewport.zoomed { cursor: grab; }
+    #image-viewport.panning { cursor: grabbing; }
+    #focus-image { max-width: 100%; max-height: 100%; object-fit: contain; background: white; border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); transform: translate(var(--pan-x, 0px), var(--pan-y, 0px)) scale(var(--zoom, 1)); transform-origin: center; user-select: none; }
+    .zoom-controls { position: absolute; right: 12px; bottom: 12px; display: flex; align-items: center; gap: 4px; padding: 4px; border-radius: 6px; background: rgba(30, 30, 30, 0.9); box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+    .zoom-controls button { min-width: 30px; padding: 4px 8px; }
+    #zoom-level { min-width: 48px; text-align: center; font-size: 0.8rem; color: var(--text-muted); }
     .nav-overlay { margin-top: 14px; display: flex; gap: 10px; align-items: center; }
     #grid-view { flex: 1; padding: 20px; overflow-y: auto; display: none; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 20px; align-content: flex-start; }
     .grid-card { background: var(--bg-panel); border: 1px solid var(--border); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 8px; cursor: pointer; transition: transform 0.15s; }
@@ -90,7 +96,15 @@ const HTML_VIEWER_TEMPLATE = """
     </div>
     <div id="focus-view">
       <div id="empty-focus" class="empty-state">No plots generated yet.<br>Execute any Makie/Plots call in Neovim.</div>
-      <img id="focus-image" style="display:none;" />
+      <div id="image-viewport" style="display:none;" aria-label="Zoomable plot viewport">
+        <img id="focus-image" draggable="false" />
+        <div class="zoom-controls" aria-label="Zoom controls">
+          <button onclick="zoomBy(-0.25)" aria-label="Zoom out" title="Zoom out">−</button>
+          <span id="zoom-level">100%</span>
+          <button onclick="zoomBy(0.25)" aria-label="Zoom in" title="Zoom in">+</button>
+          <button onclick="resetZoom()" aria-label="Reset zoom" title="Reset zoom">Reset</button>
+        </div>
+      </div>
       <div class="nav-overlay" id="nav-overlay" style="display:none;">
         <button onclick="navigate(-1)">← Prev</button>
         <span id="focus-indicator" style="font-size: 0.85rem; color: var(--text-muted);">0 / 0</span>
@@ -105,6 +119,10 @@ const HTML_VIEWER_TEMPLATE = """
     let currentIndex = -1;
     let viewMode = 'focus';
     let sidebarVisible = true;
+    let zoom = 1;
+    let panX = 0;
+    let panY = 0;
+    let dragStart = null;
 
     async function syncPlots() {
       const res = await fetch('/api/plots');
@@ -164,9 +182,11 @@ const HTML_VIEWER_TEMPLATE = """
       if (idx < 0 || idx >= plotList.length) return;
       currentIndex = idx;
       document.getElementById('empty-focus').style.display = 'none';
+      const viewport = document.getElementById('image-viewport');
       const img = document.getElementById('focus-image');
+      resetZoom();
       img.src = '/plot/' + plotList[currentIndex].id;
-      img.style.display = 'block';
+      viewport.style.display = 'flex';
       document.getElementById('nav-overlay').style.display = 'flex';
       document.getElementById('focus-indicator').innerText = (currentIndex + 1) + ' / ' + plotList.length;
       document.querySelectorAll('.thumb-card').forEach((el, i) => {
@@ -175,6 +195,38 @@ const HTML_VIEWER_TEMPLATE = """
     }
 
     function navigate(direction) { selectPlot(currentIndex + direction); }
+
+    function constrainPan() {
+      const viewport = document.getElementById('image-viewport');
+      const img = document.getElementById('focus-image');
+      const maxX = Math.max(0, (img.clientWidth * zoom - viewport.clientWidth) / 2);
+      const maxY = Math.max(0, (img.clientHeight * zoom - viewport.clientHeight) / 2);
+      panX = Math.max(-maxX, Math.min(maxX, panX));
+      panY = Math.max(-maxY, Math.min(maxY, panY));
+    }
+
+    function renderZoom() {
+      const viewport = document.getElementById('image-viewport');
+      const img = document.getElementById('focus-image');
+      constrainPan();
+      img.style.setProperty('--zoom', zoom);
+      img.style.setProperty('--pan-x', panX + 'px');
+      img.style.setProperty('--pan-y', panY + 'px');
+      document.getElementById('zoom-level').innerText = Math.round(zoom * 100) + '%';
+      viewport.classList.toggle('zoomed', zoom > 1);
+    }
+
+    function zoomBy(amount) {
+      zoom = Math.max(1, Math.min(5, zoom + amount));
+      renderZoom();
+    }
+
+    function resetZoom() {
+      zoom = 1;
+      panX = 0;
+      panY = 0;
+      renderZoom();
+    }
 
     function updateSidebar() {
       const available = viewMode === 'focus';
@@ -205,7 +257,7 @@ const HTML_VIEWER_TEMPLATE = """
 
     function showEmptyState() {
       currentIndex = -1;
-      document.getElementById('focus-image').style.display = 'none';
+      document.getElementById('image-viewport').style.display = 'none';
       document.getElementById('nav-overlay').style.display = 'none';
       document.getElementById('empty-focus').style.display = 'block';
     }
@@ -241,6 +293,36 @@ const HTML_VIEWER_TEMPLATE = """
         // The Julia session may have closed; the local gallery is still cleared.
       }
     }
+
+    const viewport = document.getElementById('image-viewport');
+    viewport.addEventListener('wheel', (event) => {
+      if (viewMode !== 'focus' || currentIndex < 0) return;
+      event.preventDefault();
+      zoomBy(event.deltaY < 0 ? 0.25 : -0.25);
+    }, { passive: false });
+
+    viewport.addEventListener('pointerdown', (event) => {
+      if (zoom <= 1 || event.target.closest('.zoom-controls')) return;
+      dragStart = { x: event.clientX, y: event.clientY, panX, panY };
+      viewport.setPointerCapture(event.pointerId);
+      viewport.classList.add('panning');
+    });
+
+    viewport.addEventListener('pointermove', (event) => {
+      if (!dragStart) return;
+      panX = dragStart.panX + event.clientX - dragStart.x;
+      panY = dragStart.panY + event.clientY - dragStart.y;
+      renderZoom();
+    });
+
+    function stopPanning() {
+      dragStart = null;
+      viewport.classList.remove('panning');
+    }
+
+    viewport.addEventListener('pointerup', stopPanning);
+    viewport.addEventListener('pointercancel', stopPanning);
+    window.addEventListener('resize', renderZoom);
 
     window.addEventListener('keydown', (e) => {
       if (viewMode === 'focus') {
