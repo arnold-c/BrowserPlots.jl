@@ -21,6 +21,12 @@ Pkg.add("CairoMakie")
 Pkg.add("Plots")
 ```
 
+## Integration checks
+
+The repository includes isolated checks for the Makie and Plots.jl workflows.
+They install plotting dependencies only in `examples/`, not for BrowserPlots
+users. See [`examples/README.md`](examples/README.md).
+
 ## Quick start
 
 ### Plots.jl
