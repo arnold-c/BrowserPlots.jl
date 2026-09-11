@@ -343,6 +343,12 @@ function enable_makie_inline!()
     return nothing
 end
 
+function disable_plots_auto_show!()
+    extension_module = Base.get_extension(@__MODULE__, :BrowserPlotsPlotsExt)
+    isnothing(extension_module) || extension_module.disable_auto_show!()
+    return nothing
+end
+
 function open_browser(url::String)
     return try
         if Sys.isapple()
@@ -449,6 +455,7 @@ function browse(; port::Int = 8008, silent::Bool = false)
         VIEWER.active = true
     end
     enable_makie_inline!()
+    disable_plots_auto_show!()
 
     url = "http://127.0.0.1:$port"
     println("BrowserGraphics active at: $url")

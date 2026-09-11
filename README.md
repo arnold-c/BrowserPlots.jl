@@ -40,6 +40,11 @@ plot(1:10, (1:10) .^ 2; label = "x²", xlabel = "x", ylabel = "y")
 scatter!(1:10, 10 .* rand(10); label = "samples")
 ```
 
+When `browse()` is called, BrowserPlots disables Plots.jl's automatic
+`show` behavior and configures GR for PNG output, so the default backend does
+not also open its GKS window. Use `gui()` or `plot(; show = true)` when you
+explicitly want the native viewer.
+
 ### Makie
 
 Use a Makie backend capable of producing PNG output, such as CairoMakie:
