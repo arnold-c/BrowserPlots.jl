@@ -1,0 +1,8 @@
+[deps]
+BrowserPlots = "dd95b149-77a5-47fc-b8dd-394eaf8426b4"
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
+IJulia = "7073ff75-c697-5162-941a-fcdaad2a7d2a"
+Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
+
+[sources]
+BrowserPlots = {path = ".."}

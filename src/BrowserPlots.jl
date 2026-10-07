@@ -17,9 +17,10 @@ mutable struct BrowserDisplay <: AbstractDisplay
     port::Int
     active::Bool
     next_id::Int
+    displayed::Set{UInt}  # objectids displayed since `reset_displayed!`
 end
 
-const VIEWER = BrowserDisplay(PlotEntry[], nothing, 8008, false, 1)
+const VIEWER = BrowserDisplay(PlotEntry[], nothing, 8008, false, 1, Set{UInt}())
 
 const HTML_VIEWER_TEMPLATE = """
 <!DOCTYPE html>
@@ -363,15 +364,46 @@ function open_browser(url::String)
     end
 end
 
+# Kernel hooks: no-ops here; the IJulia extension adds methods.
+# Whether forwarded kernel results should also appear inline in the frontend.
+const KERNEL_INLINE = Ref(true)
+
+abstract type Kernel end
+struct IJuliaKernel <: Kernel end
+
+_register_kernel_hooks(::Kernel) = nothing
+_unregister_kernel_hooks(::Kernel) = nothing
+
+"""Whether `x` can be added to the gallery."""
+gallery_displayable(x) = VIEWER.server !== nothing && showable(MIME"image/png"(), x)
+
+"""Add `x` directly to the gallery, bypassing the display stack."""
+add_to_gallery!(x) = Base.display(VIEWER, x)
+
+reset_displayed!() = empty!(VIEWER.displayed)
+
 """
-    browse(; port=8008, silent=false)
+    browse(; port=8008, silent=false, ijulia=true, inline=true)
 
 Starts the BrowserGraphics HTTP server and hooks into Julia's display system.
 The browser gallery opens automatically unless `silent=true`.
 Use `silent=true` to restart the server without opening a new browser tab, then
 reload an existing gallery tab.
+
+With `ijulia=true` (and IJulia loaded), a cell's final value is added to the
+gallery automatically, as in the REPL; a trailing `;` suppresses it. The plot
+still also appears inline unless `inline=false`, which suppresses the
+frontend output (e.g. a plot pane) for values added to the gallery. Use
+`ijulia=false` to disable forwarding.
+The `inline` setting only affects IJulia.
 """
-function browse(; port::Int = 8008, silent::Bool = false)
+function browse(;
+        port::Int = 8008,
+        silent::Bool = false,
+        ijulia::Bool = true,
+        inline::Bool = true,
+    )
+    KERNEL_INLINE[] = inline
     if VIEWER.server !== nothing
         close_server!()
     end
@@ -456,6 +488,7 @@ function browse(; port::Int = 8008, silent::Bool = false)
     end
     enable_makie_inline!()
     disable_plots_auto_show!()
+    ijulia && _register_kernel_hooks(IJuliaKernel())
 
     url = "http://127.0.0.1:$port"
     println("BrowserGraphics active at: $url")
@@ -471,6 +504,7 @@ function clear_history!()
 end
 
 function close_server!()
+    _unregister_kernel_hooks(IJuliaKernel())
     if VIEWER.server !== nothing
         close(VIEWER.server)
         VIEWER.server = nothing
@@ -492,6 +526,7 @@ function Base.display(d::BrowserDisplay, mime::MIME"image/png", x)
     show(io, mime, x)
     entry = PlotEntry(d.next_id, take!(io), Dates.format(now(), "HH:MM:SS"))
     d.next_id += 1
+    push!(d.displayed, objectid(x))
     push!(d.history, entry)
     return nothing
 end

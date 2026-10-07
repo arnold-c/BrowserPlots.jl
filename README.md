@@ -105,15 +105,19 @@ close_server!()   # stop the server and unregister the display
 
 > **Warning:** A plot expression ending in `;` is not displayed automatically. Remove the semicolon or pass the plot to `display`.
 
+## IJulia / Jupyter
+
+With IJulia loaded, `browse()` forwards a cell's final value to the gallery, as the REPL does. A trailing `;` suppresses it. The plot also still appears inline (e.g. in a plot pane). Use `browse(; inline = false)` to suppress the inline output for plots sent to the gallery, or `browse(; ijulia = false)` to disable forwarding.
+
 ## API
 
 ### `browse`
 
 ```julia
-browse(; port = 8008, silent = false)
+browse(; port = 8008, silent = false, ijulia = true, inline = true)
 ```
 
-Start or restart the browser gallery server and register BrowserPlots with Julia's display stack.
+Start or restart the browser gallery server and register BrowserPlots with Julia's display stack. `ijulia` controls automatic forwarding of IJulia cell results; `inline = false` also suppresses their inline frontend output.
 
 ### `clear_history!`
 
