@@ -374,10 +374,10 @@ struct IJuliaKernel <: Kernel end
 _register_kernel_hooks(::Kernel) = nothing
 _unregister_kernel_hooks(::Kernel) = nothing
 
-"""Whether `x` can be added to the gallery."""
+# Whether `x` can be added to the gallery.
 gallery_displayable(x) = VIEWER.server !== nothing && showable(MIME"image/png"(), x)
 
-"""Add `x` directly to the gallery, bypassing the display stack."""
+# Add `x` directly to the gallery, bypassing the display stack.
 add_to_gallery!(x) = Base.display(VIEWER, x)
 
 reset_displayed!() = empty!(VIEWER.displayed)
